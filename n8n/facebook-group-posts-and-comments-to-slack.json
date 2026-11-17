@@ -1,0 +1,147 @@
+{
+  "name": "Facebook group posts and comments to Slack (HuddleWatch)",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Facebook group posts + comments to Slack\n\nSends every new post and comment that HuddleWatch finds in your Facebook groups to a Slack channel. Comments (on the HuddleWatch Comments plan) and posts get different messages.\n\n### Setup\n1. Activate this workflow and copy the **Production URL** of the Webhook node.\n2. In HuddleWatch: Settings → Delivery → Webhook → paste it into **Endpoint URL**.\n3. Connect your Slack credentials and pick a channel in both Slack nodes.\n\nPayload reference: https://huddle.watch/blog/facebook-group-webhook\nComment fields: https://huddle.watch/blog/facebook-group-comments-to-webhook",
+        "height": 420,
+        "width": 420
+      },
+      "id": "a1f0c0de-0000-4000-8000-000000000001",
+      "name": "Setup",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -520,
+        -120
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "huddlewatch",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "id": "a1f0c0de-0000-4000-8000-000000000002",
+      "name": "HuddleWatch webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "webhookId": "a1f0c0de-0000-4000-8000-0000000000aa"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "a1f0c0de-0000-4000-8000-0000000000bb",
+              "leftValue": "={{ $json.body.type }}",
+              "rightValue": "comment",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "a1f0c0de-0000-4000-8000-000000000003",
+      "name": "Is it a comment?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        240,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "#facebook-leads",
+          "mode": "name"
+        },
+        "text": "=💬 *New comment* in {{ $json.body.group }}\n*{{ $json.body.author }}*: {{ $json.body.body }}\n<{{ $json.body.permalink }}|Open comment> · <{{ $json.body.post_permalink }}|View post>",
+        "otherOptions": {}
+      },
+      "id": "a1f0c0de-0000-4000-8000-000000000004",
+      "name": "Slack: comment",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.2,
+      "position": [
+        500,
+        -100
+      ]
+    },
+    {
+      "parameters": {
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "#facebook-leads",
+          "mode": "name"
+        },
+        "text": "=📌 *New post* in {{ $json.body.group }} (score {{ $json.body.score }})\n*{{ $json.body.author }}*: {{ $json.body.body }}\n<{{ $json.body.permalink }}|Open post>",
+        "otherOptions": {}
+      },
+      "id": "a1f0c0de-0000-4000-8000-000000000005",
+      "name": "Slack: post",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.2,
+      "position": [
+        500,
+        100
+      ]
+    }
+  ],
+  "connections": {
+    "HuddleWatch webhook": {
+      "main": [
+        [
+          {
+            "node": "Is it a comment?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is it a comment?": {
+      "main": [
+        [
+          {
+            "node": "Slack: comment",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Slack: post",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": false
+  }
+}
